@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG Indicator Compliance Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #1a2530);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .btn-selected {
+            opacity: 0.9;
+            transform: scale(0.95);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2) !important;
+        }
+        
+        .test-item {
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #e9ecef;
+            background-color: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .test-item:hover {
+            border-left-color: var(--secondary-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        
+        .test-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .category-environmental {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .category-social {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .category-governance {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 6px;
+        }
+        
+        .compliance-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .evidence-box {
+            margin: 15px 0;
+        }
+        
+        .remarks-box {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 6px;
+            border-left: 4px solid #ffc107;
+            animation: fadeIn 0.5s;
+        }
+        
+        .score-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .score-excellent { color: var(--success-color); }
+        .score-good { color: #3498db; }
+        .score-fair { color: var(--warning-color); }
+        .score-poor { color: var(--danger-color); }
+        
+        .chart-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .action-buttons .btn {
+            margin: 5px;
+            padding: 12px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .action-buttons .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .recommendation-card {
+            border-left: 5px solid;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .recommendation-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-compliant { background-color: var(--success-color); }
+        .status-noncompliant { background-color: var(--danger-color); }
+        .status-notset { background-color: #6c757d; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .test-metadata {
+                grid-template-columns: 1fr;
+            }
+            
+            .compliance-buttons {
+                flex-direction: column;
+            }
+            
+            .compliance-buttons .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1 class="text-center mb-3"><i class="bi bi-clipboard-data"></i> ESG Indicator Compliance Dashboard</h1>
+            <p class="text-center mb-0">Track and manage your Environmental, Social, and Governance compliance indicators</p>
+        </div>
+    </div>
+
+    <div class="container py-3">
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Total Indicators</h5>
+                        <h2 class="score-display" id="totalIndicators">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Compliant</h5>
+                        <h2 class="score-display score-excellent" id="compliantCount">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Non-Compliant</h5>
+                        <h2 class="score-display score-poor" id="nonCompliantCount">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">ESG Score</h5>
+                        <h2 class="score-display" id="esgScore">0%</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Scores -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-bar-chart"></i> Category Performance</h5>
+                        <div id="categoryScores" class="text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test List Container -->
+        <h3 class="mb-3">ESG Compliance Indicators</h3>
+        <div id="testList" class="mb-4"></div>
+        
+        <!-- Charts and Actions -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="bi bi-pie-chart"></i> Compliance Overview</h5>
+                    <canvas id="complianceChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="bi bi-bar-chart"></i> Category Comparison</h5>
+                    <canvas id="categoryChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body text-center action-buttons">
+                        <h5 class="card-title mb-4">Report & Export</h5>
+                        <button class="btn btn-primary btn-lg" onclick="checkCompliance()">
+                            <i class="bi bi-graph-up"></i> Update Compliance Status
+                        </button>
+                        <button class="btn btn-success btn-lg" onclick="downloadReport()">
+                            <i class="bi bi-file-pdf"></i> Download PDF Report
+                        </button>
+                        <button class="btn btn-info btn-lg" onclick="downloadExcel()">
+                            <i class="bi bi-file-earmark-excel"></i> Download Excel Report
+                        </button>
+                        <button class="btn btn-warning btn-lg" onclick="clearAllData()">
+                            <i class="bi bi-trash"></i> Clear All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-lightbulb"></i> Recommendations & Actions</h5>
+                        <ul id="recommendationList" class="list-group"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="row mt-4 mb-4">
+            <div class="col-12 text-center text-muted">
+                <small>ESG Compliance Dashboard v1.0 | Data is automatically saved to your browser's local storage</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script>
+        // Define all tests in a single array
+        const tests = [
+            // --- ENVIRONMENTAL ---
+            { 
+                id: 'energyData', 
+                name: 'Is total energy consumption measured and recorded for the reporting year?',
+                category: 'Environmental',
+                description: 'Track total energy usage across all facilities'
+            },
+            { 
+                id: 'renewableTracking', 
+                name: 'Are renewable and non-renewable energy sources tracked separately?',
+                category: 'Environmental',
+                description: 'Differentiate between renewable and conventional energy sources'
+            },
+            { 
+                id: 'waterMonitoring', 
+                name: 'Is total water withdrawal monitored and documented?',
+                category: 'Environmental',
+                description: 'Measure water consumption and sourcing'
+            },
+            { 
+                id: 'ghgCalculation', 
+                name: 'Are Scope 1 and Scope 2 GHG emissions calculated using a recognized method?',
+                category: 'Environmental',
+                description: 'Calculate direct and indirect greenhouse gas emissions'
+            },
+            { 
+                id: 'wasteTracking', 
+                name: 'Is hazardous and non-hazardous waste tracked separately?',
+                category: 'Environmental',
+                description: 'Monitor waste generation and disposal methods'
+            },
+
+            // --- SOCIAL ---
+            { 
+                id: 'safetyIncidents', 
+                name: 'Are workplace injuries and safety incidents recorded?',
+                category: 'Social',
+                description: 'Track all workplace safety incidents and near-misses'
+            },
+            { 
+                id: 'safetyTraining', 
+                name: 'Are employee health & safety trainings conducted annually?',
+                category: 'Social',
+                description: 'Provide regular safety training to all employees'
+            },
+            { 
+                id: 'trainingHours', 
+                name: 'Are employee training hours tracked and reported?',
+                category: 'Social',
+                description: 'Record professional development and training activities'
+            },
+            { 
+                id: 'diversityData', 
+                name: 'Is gender and diversity data monitored?',
+                category: 'Social',
+                description: 'Track workforce diversity metrics'
+            },
+            { 
+                id: 'patientSafety', 
+                name: 'Are patient/customer safety incidents documented and reviewed?',
+                category: 'Social',
+                description: 'Monitor and address customer/patient safety concerns'
+            },
+
+            // --- GOVERNANCE ---
+            { 
+                id: 'antiCorruptionPolicy', 
+                name: 'Is there a documented anti-corruption policy?',
+                category: 'Governance',
+                description: 'Establish and communicate anti-corruption guidelines'
+            },
+            { 
+                id: 'antiCorruptionTraining', 
+                name: 'Are anti-corruption trainings provided to employees?',
+                category: 'Governance',
+                description: 'Train employees on anti-corruption policies'
+            },
+            { 
+                id: 'esgOversight', 
+                name: 'Is ESG oversight assigned to senior leadership?',
+                category: 'Governance',
+                description: 'Assign ESG responsibility to executive leadership'
+            },
+            { 
+                id: 'esgKpiReview', 
+                name: 'Are ESG KPIs reviewed by management regularly?',
+                category: 'Governance',
+                description: 'Regularly review ESG performance metrics'
+            }
+        ];
+
+        // Global variables
+        let chartInstance = null;
+        let categoryChartInstance = null;
+        
+        // Store all test data
+        const complianceStatus = {};
+        const remarks = {};
+        const evidenceLinks = {};
+        const frequency = {};
+        const doneDates = {};
+        const dueDates = {};
+
+        // Initialize the dashboard
+        function initDashboard() {
+            const testListContainer = document.getElementById('testList');
+            testListContainer.innerHTML = '';
+            
+            tests.forEach(test => {
+                // Initialize default values
+                if (!complianceStatus[test.id]) complianceStatus[test.id] = '';
+                if (!remarks[test.id]) remarks[test.id] = '';
+                if (!evidenceLinks[test.id]) evidenceLinks[test.id] = '';
+                if (!frequency[test.id]) frequency[test.id] = '';
+                if (!doneDates[test.id]) doneDates[test.id] = '';
+                if (!dueDates[test.id]) dueDates[test.id] = '';
+
+                // Create test item HTML
+                const testItem = document.createElement('div');
+                testItem.className = 'test-item';
+                testItem.id = test.id;
+                
+                // Determine category class
+                let categoryClass = '';
+                if (test.category === 'Environmental') categoryClass = 'category-environmental';
+                else if (test.category === 'Social') categoryClass = 'category-social';
+                else if (test.category === 'Governance') categoryClass = 'category-governance';
+                
+                testItem.innerHTML = `
+                    <div class="category-badge ${categoryClass}">${test.category}</div>
+                    <h5 class="test-header">${test.name}</h5>
+                    <p class="text-muted small mb-3">${test.description}</p>
+                    
+                    <div class="test-metadata">
+                        <div class="form-group">
+                            <label for="frequency-${test.id}"><small><strong>Frequency:</strong></small></label>
+                            <select id="frequency-${test.id}" class="form-control form-control-sm" onchange="saveFrequency('${test.id}', this.value)">
+                                <option value="">Select Frequency</option>
+                                <option value="Yearly">Yearly</option>
+                                <option value="Half-Yearly">Half-Yearly</option>
+                                <option value="Quarterly">Quarterly</option>
+                                <option value="Monthly">Monthly</option>
+                                <option value="Weekly">Weekly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="doneDate-${test.id}"><small><strong>Last Done Date:</strong></small></label>
+                            <input type="date" id="doneDate-${test.id}" class="form-control form-control-sm" onchange="saveDoneDate('${test.id}', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label for="dueDate-${test.id}"><small><strong>Next Due Date:</strong></small></label>
+                            <input type="date" id="dueDate-${test.id}" class="form-control form-control-sm" onchange="saveDueDate('${test.id}', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="compliance-buttons">
+                        <button class="btn btn-success" onclick="setCompliance('${test.id}', 'compliant')">
+                            <i class="bi bi-check-circle"></i> Compliant
+                        </button>
+                        <button class="btn btn-danger" onclick="setCompliance('${test.id}', 'nonCompliant')">
+                            <i class="bi bi-x-circle"></i> Non-Compliant
+                        </button>
+                        <button class="btn btn-secondary" onclick="setCompliance('${test.id}', '')">
+                            <i class="bi bi-dash-circle"></i> Clear
+                        </button>
+                    </div>
+
+                    <div class="evidence-box">
+                        <label for="evidence-${test.id}"><small><strong><i class="bi bi-link"></i> Evidence Link (URL):</strong></small></label>
+                        <input type="text" id="evidence-${test.id}" class="form-control form-control-sm" 
+                               placeholder="https://onedrive.live.com/... or https://sharepoint.com/..." 
+                               oninput="saveEvidence('${test.id}', this.value)">
+                    </div>
+
+                    <div id="${test.id}Remarks" class="remarks-box" style="display: none;">
+                        <label for="remarks-${test.id}"><small><strong><i class="bi bi-chat-left-text"></i> Remarks for Non-Compliance:</strong></small></label>
+                        <textarea id="remarks-${test.id}" class="form-control form-control-sm" rows="3" 
+                                  placeholder="Please provide details about the non-compliance issue, root cause, and corrective actions..."
+                                  oninput="saveRemarks('${test.id}', this.value)"></textarea>
+                    </div>
+                `;
+                
+                testListContainer.appendChild(testItem);
+                
+                // Restore saved values into UI
+                if (frequency[test.id]) {
+                    document.getElementById(`frequency-${test.id}`).value = frequency[test.id];
+                }
+                
+                if (doneDates[test.id]) {
+                    document.getElementById(`doneDate-${test.id}`).value = doneDates[test.id];
+                }
+                
+                if (dueDates[test.id]) {
+                    document.getElementById(`dueDate-${test.id}`).value = dueDates[test.id];
+                }
+                
+                if (evidenceLinks[test.id]) {
+                    document.getElementById(`evidence-${test.id}`).value = evidenceLinks[test.id];
+                }
+                
+                if (remarks[test.id]) {
+                    document.getElementById(`remarks-${test.id}`).value = remarks[test.id];
+                }
+                
+                // Restore compliance buttons
+                if (complianceStatus[test.id]) {
+                    setCompliance(test.id, complianceStatus[test.id]);
+                }
+            });
+            
+            updateStats();
+        }
+
+        // Function to set compliance status
+        function setCompliance(testId, status) {
+            const compliantBtn = document.querySelector(`#${testId} .btn-success`);
+            const nonCompliantBtn = document.querySelector(`#${testId} .btn-danger`);
+            const clearBtn = document.querySelector(`#${testId} .btn-secondary`);
+            const remarksDiv = document.getElementById(`${testId}Remarks`);
+
+            // Remove selection from all buttons
+            compliantBtn.classList.remove('btn-selected');
+            nonCompliantBtn.classList.remove('btn-selected');
+            clearBtn.classList.remove('btn-selected');
+
+            // Set the new status
+            complianceStatus[testId] = status;
+
+            if (status === 'compliant') {
+                remarks[testId] = '';
+                compliantBtn.classList.add('btn-selected');
+                remarksDiv.style.display = 'none';
+                document.getElementById(`remarks-${testId}`).value = '';
+            } else if (status === 'nonCompliant') {
+                nonCompliantBtn.classList.add('btn-selected');
+                remarksDiv.style.display = 'block';
+            } else {
+                clearBtn.classList.add('btn-selected');
+                remarks[testId] = '';
+                remarksDiv.style.display = 'none';
+                document.getElementById(`remarks-${testId}`).value = '';
+            }
+            
+            saveAllData();
+            updateStats();
+        }
+
+        // Data saving functions
+        function saveRemarks(testId, text) {
+            remarks[testId] = text;
+            saveAllData();
+        }
+
+        function saveEvidence(testId, link) {
+            evidenceLinks[testId] = link;
+            saveAllData();
+        }
+
+        function saveFrequency(testId, freq) {
+            frequency[testId] = freq;
+            saveAllData();
+        }
+
+        function saveDoneDate(testId, date) {
+            doneDates[testId] = date;
+            saveAllData();
+        }
+
+        function saveDueDate(testId, date) {
+            dueDates[testId] = date;
+            saveAllData();
+        }
+        
+        function saveAllData() {
+            localStorage.setItem("esgData", JSON.stringify({
+                complianceStatus,
+                remarks,
+                evidenceLinks,
+                frequency,
+                doneDates,
+                dueDates
+            }));
+        }
+        
+        function updateStats() {
+            let compliant = 0;
+            let nonCompliant = 0;
+            
+            tests.forEach(test => {
+                if (complianceStatus[test.id] === 'compliant') compliant++;
+                if (complianceStatus[test.id] === 'nonCompliant') nonCompliant++;
+            });
+            
+            const total = tests.length;
+            const notSet = total - compliant - nonCompliant;
+            const score = Math.round((compliant / total) * 100);
+            
+            // Update stats cards
+            document.getElementById("totalIndicators").textContent = total;
+            document.getElementById("compliantCount").textContent = compliant;
+            document.getElementById("nonCompliantCount").textContent = nonCompliant;
+            
+            // Update score with color coding
+            const scoreElement = document.getElementById("esgScore");
+            scoreElement.textContent = score + "%";
+            
+            if (score >= 80) {
+                scoreElement.className = "score-display score-excellent";
+            } else if (score >= 60) {
+                scoreElement.className = "score-display score-good";
+            } else if (score >= 40) {
+                scoreElement.className = "score-display score-fair";
+            } else {
+                scoreElement.className = "score-display score-poor";
+            }
+        }
+
+        // Function to check compliance and render charts
+        function checkCompliance() {
+            const complianceData = {
+                compliant: 0,
+                nonCompliant: 0,
+                notSet: 0
+            };
+
+            // Count statuses
+            tests.forEach(test => {
+                const status = complianceStatus[test.id];
+
+                if (status === 'compliant') {
+                    complianceData.compliant++;
+                } else if (status === 'nonCompliant') {
+                    complianceData.nonCompliant++;
+                } else {
+                    complianceData.notSet++;
+                }
+            });
+
+            // ESG Score calculation
+            const score = Math.round((complianceData.compliant / tests.length) * 100);
+            
+            // Update score display
+            const scoreElement = document.getElementById("esgScore");
+            scoreElement.textContent = score + "%";
+            
+            if (score >= 80) {
+                scoreElement.className = "score-display score-excellent";
+            } else if (score >= 60) {
+                scoreElement.className = "score-display score-good";
+            } else if (score >= 40) {
+                scoreElement.className = "score-display score-fair";
+            } else {
+                scoreElement.className = "score-display score-poor";
+            }
+
+            // Category-wise scoring
+            const categoryScores = {};
+            
+            tests.forEach(test => {
+                if (!categoryScores[test.category]) {
+                    categoryScores[test.category] = {total: 0, compliant: 0};
+                }
+                
+                categoryScores[test.category].total++;
+                
+                if (complianceStatus[test.id] === "compliant") {
+                    categoryScores[test.category].compliant++;
+                }
+            });
+            
+            // Category scores display
+            let catHTML = "";
+            const categories = [];
+            const percentages = [];
+            
+            for (const cat in categoryScores) {
+                const percent = Math.round((categoryScores[cat].compliant / categoryScores[cat].total) * 100);
+                
+                // Text display
+                catHTML += `<div class="mb-2"><strong>${cat}:</strong> ${categoryScores[cat].compliant}/${categoryScores[cat].total} indicators compliant (${percent}%)</div>`;
+                
+                // Chart data
+                categories.push(cat);
+                percentages.push(percent);
+            }
+            
+            // Show category text
+            document.getElementById("categoryScores").innerHTML = catHTML;
+            
+            // Destroy old chart if exists
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+            }
+            
+            // Create bar chart
+            const ctxBar = document.getElementById('categoryChart').getContext('2d');
+            
+            categoryChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Compliance %',
+                        data: percentages,
+                        backgroundColor: ['#28a745', '#007bff', '#ffc107']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Compliance: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Compliance Percentage'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'ESG Categories'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Destroy existing chart if it exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Render pie chart
+            const ctx = document.getElementById('complianceChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Compliant', 'Non-Compliant', 'Not Set'],
+                    datasets: [{
+                        data: [
+                            complianceData.compliant,
+                            complianceData.nonCompliant,
+                            complianceData.notSet
+                        ],
+                        backgroundColor: ['#28a745', '#dc3545', '#6c757d'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            updateRecommendations(complianceData);
+            updateStats();
+        }
+
+        function updateRecommendations(data) {
+            const recommendations = document.getElementById('recommendationList');
+            recommendations.innerHTML = '';
+
+            if (data.nonCompliant > 0) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-warning recommendation-card';
+                li.style.borderLeftColor = '#ffc107';
+                li.innerHTML = `
+                    <div class="d-flex">
+                        <div class="status-indicator status-noncompliant"></div>
+                        <div>
+                            <strong><i class="bi bi-exclamation-triangle"></i> Action Required:</strong> 
+                            ${data.nonCompliant} indicator(s) are non-compliant. 
+                            <a href="#" onclick="scrollToNonCompliant()">Click here to review them.</a>
+                        </div>
+                    </div>
+                `;
+                recommendations.appendChild(li);
+            }
+
+            if (data.notSet > 0) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-info recommendation-card';
+                li.style.borderLeftColor = '#17a2b8';
+                li.innerHTML = `
+                    <div class="d-flex">
+                        <div class="status-indicator status-notset"></div>
+                        <div>
+                            <strong><i class="bi bi-info-circle"></i> Attention Needed:</strong> 
+                            ${data.notSet} indicator(s) do not have a compliance status set. 
+                            Please evaluate and set their status.
+                        </div>
+                    </div>
+                `;
+                recommendations.appendChild(li);
+            }
+
+            if (data.compliant > 0 && data.nonCompliant === 0 && data.notSet === 0) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-success recommendation-card';
+                li.style.borderLeftColor = '#28a745';
+                li.innerHTML = `
+                    <div class="d-flex">
+                        <div class="status-indicator status-compliant"></div>
+                        <div>
+                            <strong><i class="bi bi-check-circle"></i> Excellent Compliance!</strong> 
+                            All ${data.compliant} indicators are compliant. Keep up the good work!
+                        </div>
+                    </div>
+                `;
+                recommendations.appendChild(li);
+            }
+            
+            // Add general recommendations
+            const li = document.createElement('li');
+            li.className = 'list-group-item recommendation-card';
+            li.style.borderLeftColor = '#6c757d';
+            li.innerHTML = `
+                <div>
+                    <strong><i class="bi bi-lightbulb"></i> Best Practices:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Review compliance status quarterly</li>
+                        <li>Ensure evidence links are up-to-date</li>
+                        <li>Set reminders for upcoming due dates</li>
+                        <li>Document corrective actions for non-compliance</li>
+                    </ul>
+                </div>
+            `;
+            recommendations.appendChild(li);
+        }
+        
+        function scrollToNonCompliant() {
+            const nonCompliantTests = tests.filter(test => complianceStatus[test.id] === 'nonCompliant');
+            if (nonCompliantTests.length > 0) {
+                const firstNonCompliant = document.getElementById(nonCompliantTests[0].id);
+                firstNonCompliant.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Highlight briefly
+                firstNonCompliant.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    firstNonCompliant.style.backgroundColor = '';
+                }, 2000);
+            }
+        }
+
+        // Function to download the compliance report as PDF
+        async function downloadReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Title
+            doc.setFontSize(18);
+            doc.setTextColor(44, 62, 80);
+            doc.text("ESG Indicator Compliance Report", 105, 20, { align: 'center' });
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 105, 28, { align: 'center' });
+            
+            // Summary section
+            let compliant = 0;
+            let nonCompliant = 0;
+            
+            tests.forEach(test => {
+                if (complianceStatus[test.id] === 'compliant') compliant++;
+                if (complianceStatus[test.id] === 'nonCompliant') nonCompliant++;
+            });
+            
+            const total = tests.length;
+            const score = Math.round((compliant / total) * 100);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text("Executive Summary", 14, 40);
+            
+            doc.setFontSize(10);
+            doc.text(`Total Indicators: ${total}`, 20, 50);
+            doc.text(`Compliant: ${compliant}`, 20, 57);
+            doc.text(`Non-Compliant: ${nonCompliant}`, 20, 64);
+            doc.text(`Not Set: ${total - compliant - nonCompliant}`, 20, 71);
+            doc.text(`Overall ESG Score: ${score}%`, 20, 78);
+            
+            // Prepare table data
+            let rows = [];
+            tests.forEach(test => {
+                let statusText = complianceStatus[test.id] || 'Not Set';
+                if (statusText === 'compliant') statusText = 'Compliant';
+                if (statusText === 'nonCompliant') statusText = 'Non-Compliant';
+                
+                rows.push([
+                    test.name,
+                    test.category,
+                    frequency[test.id] || 'Not set',
+                    doneDates[test.id] || 'Not set',
+                    dueDates[test.id] || 'Not set',
+                    statusText,
+                    remarks[test.id] || 'N/A'
+                ]);
+            });
+            
+            // Generate table
+            doc.autoTable({
+                head: [["Test Name", "Category", "Frequency", "Done Date", "Due Date", "Status", "Remarks"]],
+                body: rows,
+                startY: 85,
+                theme: 'grid',
+                styles: { 
+                    fontSize: 8,
+                    cellPadding: 3,
+                    valign: 'top',
+                    overflow: 'linebreak'
+                },
+                headStyles: {
+                    fillColor: [41, 128, 185],
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                columnStyles: {
+                    0: { cellWidth: 55 },
+                    1: { cellWidth: 25 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 25 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 20 },
+                    6: { cellWidth: 35 }
+                },
+                didDrawCell: function(data) {
+                    // Color code status cells
+                    if (data.column.index === 5) {
+                        if (data.cell.raw === 'Compliant') {
+                            doc.setFillColor(198, 239, 206);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                        } else if (data.cell.raw === 'Non-Compliant') {
+                            doc.setFillColor(255, 199, 206);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                        }
+                    }
+                }
+            });
+            
+            // Add page number
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Page ${i} of ${pageCount}`, 195, 287, { align: 'right' });
+            }
+            
+            // Save PDF
+            doc.save(`ESG_Compliance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Function to download Excel report
+        function downloadExcel() {
+            // Create main data sheet
+            const rows = [];
+            
+            // Header row
+            rows.push([
+                "Test Name",
+                "Category",
+                "Frequency",
+                "Last Done Date",
+                "Next Due Date",
+                "Status",
+                "Remarks",
+                "Evidence Link"
+            ]);
+            
+            // Data rows
+            tests.forEach(test => {
+                let statusText = complianceStatus[test.id] || 'Not Set';
+                if (statusText === 'compliant') statusText = 'Compliant';
+                if (statusText === 'nonCompliant') statusText = 'Non-Compliant';
+                
+                rows.push([
+                    test.name,
+                    test.category,
+                    frequency[test.id] || "",
+                    doneDates[test.id] || "",
+                    dueDates[test.id] || "",
+                    statusText,
+                    remarks[test.id] || "",
+                    evidenceLinks[test.id] || ""
+                ]);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            
+            // Apply styling to status cells
+            for (let i = 1; i < rows.length; i++) {
+                const statusCell = ws[`F${i+1}`];
+                
+                if (!statusCell) continue;
+                
+                const status = rows[i][5];
+                
+                if (status === "Compliant") {
+                    if (!statusCell.s) statusCell.s = {};
+                    statusCell.s.fill = { fgColor: { rgb: "C6EFCE" } };
+                    statusCell.s.font = { bold: true, color: { rgb: "006100" } };
+                } else if (status === "Non-Compliant") {
+                    if (!statusCell.s) statusCell.s = {};
+                    statusCell.s.fill = { fgColor: { rgb: "FFC7CE" } };
+                    statusCell.s.font = { bold: true, color: { rgb: "9C0006" } };
+                }
+            }
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 50 },
+                { wch: 15 },
+                { wch: 12 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 40 },
+                { wch: 50 }
+            ];
+            
+            // Freeze header row
+            ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2' };
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "ESG Compliance Data");
+            
+            // Create summary sheet
+            let compliant = 0;
+            let nonCompliant = 0;
+            
+            tests.forEach(t => {
+                if (complianceStatus[t.id] === "compliant") compliant++;
+                if (complianceStatus[t.id] === "nonCompliant") nonCompliant++;
+            });
+            
+            const total = tests.length;
+            const notSet = total - compliant - nonCompliant;
+            const score = Math.round((compliant / total) * 100);
+            
+            // Category performance
+            const catScores = {};
+            tests.forEach(t => {
+                if (!catScores[t.category]) {
+                    catScores[t.category] = { total: 0, compliant: 0 };
+                }
+                catScores[t.category].total++;
+                
+                if (complianceStatus[t.id] === "compliant") {
+                    catScores[t.category].compliant++;
+                }
+            });
+            
+            const summaryRows = [
+                ["ESG COMPLIANCE DASHBOARD - SUMMARY REPORT"],
+                [""],
+                ["Report Date", new Date().toLocaleDateString()],
+                ["Overall ESG Score", `${score}%`],
+                [""],
+                ["COMPLIANCE OVERVIEW"],
+                ["Total Indicators", total],
+                ["Compliant", compliant],
+                ["Non-Compliant", nonCompliant],
+                ["Not Set", notSet],
+                [""],
+                ["CATEGORY PERFORMANCE"],
+                ["Category", "Compliant", "Total", "Percentage"]
+            ];
+            
+            for (const cat in catScores) {
+                const percent = Math.round((catScores[cat].compliant / catScores[cat].total) * 100);
+                summaryRows.push([cat, catScores[cat].compliant, catScores[cat].total, `${percent}%`]);
+            }
+            
+            summaryRows.push(["", "", "", ""]);
+            summaryRows.push(["NON-COMPLIANT ITEMS (Require Attention)"]);
+            summaryRows.push(["Test Name", "Category", "Remarks"]);
+            
+            tests.forEach(t => {
+                if (complianceStatus[t.id] === "nonCompliant") {
+                    summaryRows.push([t.name, t.category, remarks[t.id] || "No remarks provided"]);
+                }
+            });
+            
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+            wsSummary['!cols'] = [
+                { wch: 60 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 }
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Summary & Analysis");
+            
+            // Download the file
+            XLSX.writeFile(wb, `ESG_Compliance_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+        
+        function clearAllData() {
+            if (confirm("Are you sure you want to clear all data? This action cannot be undone.")) {
+                localStorage.removeItem("esgData");
+                
+                // Clear all data objects
+                Object.keys(complianceStatus).forEach(key => delete complianceStatus[key]);
+                Object.keys(remarks).forEach(key => delete remarks[key]);
+                Object.keys(evidenceLinks).forEach(key => delete evidenceLinks[key]);
+                Object.keys(frequency).forEach(key => delete frequency[key]);
+                Object.keys(doneDates).forEach(key => delete doneDates[key]);
+                Object.keys(dueDates).forEach(key => delete dueDates[key]);
+                
+                // Reinitialize dashboard
+                initDashboard();
+                
+                // Clear charts
+                if (chartInstance) {
+                    chartInstance.destroy();
+                    chartInstance = null;
+                }
+                
+                if (categoryChartInstance) {
+                    categoryChartInstance.destroy();
+                    categoryChartInstance = null;
+                }
+                
+                // Clear recommendations
+                document.getElementById("recommendationList").innerHTML = "";
+                
+                // Show success message
+                alert("All data has been cleared. The dashboard has been reset.");
+            }
+        }
+
+        // Initialize the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedData();
+            initDashboard();
+            checkCompliance(); // Run initial compliance check
+        });
+
+        function loadSavedData() {
+            const data = JSON.parse(localStorage.getItem("esgData"));
+            if (!data) return;
+
+            Object.assign(complianceStatus, data.complianceStatus || {});
+            Object.assign(remarks, data.remarks || {});
+            Object.assign(evidenceLinks, data.evidenceLinks || {});
+            Object.assign(frequency, data.frequency || {});
+            Object.assign(doneDates, data.doneDates || {});
+            Object.assign(dueDates, data.dueDates || {});
+        }
+    </script>
+</body>
+</html>
